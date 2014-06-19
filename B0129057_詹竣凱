@@ -1,0 +1,226 @@
+﻿'''
+
+翻譯來源:
+	Wormy (a Nibbles clone)
+	By Al Sweigart al@inventwithpython.com
+	http://inventwithpython.com/pygame
+	Released under a "Simplified BSD" license
+作者:
+	B0129057_詹竣凱
+
+'''
+import random, pygame, sys
+from pygame.locals import *
+
+點 = 15
+螢幕寬 = 640
+螢幕高 = 480
+細胞 = 20
+assert 螢幕寬 % 細胞 == 0
+assert 螢幕高 % 細胞 == 0
+細胞寬 = int(螢幕寬 / 細胞)
+細胞高 = int(螢幕高 / 細胞)
+
+#             R    G    B
+白     = (255, 255, 255)
+黑     = (  0,   0,   0)
+紅     = (255,   0,   0)
+綠     = (  0, 255,   0)
+深綠   = (  0, 155,   0)
+深灰   = ( 40,  40,  40)
+底色 = 黑
+
+上 = 'up'
+下 = 'down'
+左 = 'left'
+右 = 'right'
+
+頭 = 0 
+
+def 主程式():
+    global 時鐘, 顯示, 基本點
+
+    pygame.init()
+    時鐘 = pygame.time.Clock()
+    顯示 = pygame.display.set_mode((螢幕寬, 螢幕高))
+    基本點 = pygame.font.Font('freesansbold.ttf', 18)
+    pygame.display.set_caption('Wormy')
+
+    起始螢幕()
+    while True:
+        開始()
+        結束螢幕()
+
+
+def 開始():
+    
+    起始x = random.randint(5, 細胞寬 - 6)
+    起始y = random.randint(5, 細胞高 - 6)
+    蟲 = [{'x': 起始x,     'y': 起始y},
+                  {'x': 起始x - 1, 'y': 起始y},
+                  {'x': 起始x - 2, 'y': 起始y}]
+    方向 = 下
+
+    
+    食物 = 隨機產生位置()
+
+    while True:
+        for 事件 in pygame.event.get():
+            if 事件.type == QUIT:
+                終止()
+            elif 事件.type == KEYDOWN:
+                if (事件.key == K_LEFT or 事件.key == K_a) and 方向 != 右:
+                    方向 = 左
+                elif (事件.key == K_RIGHT or 事件.key == K_d) and 方向 != 左:
+                    方向 = 右
+                elif (事件.key == K_UP or 事件.key == K_w) and 方向 != 下:
+                    方向 = 上
+                elif (事件.key == K_DOWN or 事件.key == K_s) and 方向 != 上:
+                    方向 = 下
+                elif 事件.key == K_ESCAPE:
+                    終止()
+
+        # 撞牆或碰到身體
+        if 蟲[頭]['x'] == -1 or 蟲[頭]['x'] == 細胞寬 or 蟲[頭]['y'] == -1 or 蟲[頭]['y'] == 細胞高:
+            return # game over
+        for 蟲身體 in 蟲[1:]:
+            if 蟲身體['x'] == 蟲[頭]['x'] and 蟲身體['y'] == 蟲[頭]['y']:
+                return # game over
+
+        #食物是否被吃
+        if 蟲[頭]['x'] == 食物['x'] and 蟲[頭]['y'] == 食物['y']:
+            
+            食物 = 隨機產生位置() 
+        else:
+            del 蟲[-1] 
+
+        
+        if 方向 == 上:
+            蟲尾 = {'x': 蟲[頭]['x'], 'y': 蟲[頭]['y'] - 1}
+        elif 方向 == 下:
+            蟲尾 = {'x': 蟲[頭]['x'], 'y': 蟲[頭]['y'] + 1}
+        elif 方向 == 左:
+            蟲尾 = {'x': 蟲[頭]['x'] - 1, 'y': 蟲[頭]['y']}
+        elif 方向 == 右:
+            蟲尾 = {'x': 蟲[頭]['x'] + 1, 'y': 蟲[頭]['y']}
+        蟲.insert(0, 蟲尾)
+        顯示.fill(黑)
+        顯示方格()
+        顯示蟲(蟲)
+        顯示食物(食物)
+        顯示分數(len(蟲) - 3)
+        pygame.display.update()
+        時鐘.tick(點)
+
+def 按鍵():
+    按鍵 = 基本點.render('Press a key to play.', True, 深灰)
+    按鍵反應 = 按鍵.get_rect()
+    按鍵反應.topleft = (螢幕寬 - 200, 螢幕高 - 30)
+    顯示.blit(按鍵, 按鍵反應)
+
+
+def 檢測按鍵():
+    if len(pygame.event.get(QUIT)) > 0:
+        終止()
+
+    向上 = pygame.event.get(KEYUP)
+    if len(向上) == 0:
+        return None
+    if 向上[0].key == K_ESCAPE:
+        終止()
+    return 向上[0].key
+
+
+def 起始螢幕():
+    標題字體 = pygame.font.Font('freesansbold.ttf', 100)
+    字型 = 標題字體.render('wormy!', True, 白, 深綠)
+    另一字型 = 標題字體.render('wormy!', True, 綠)
+
+    角度 = 0
+    另一角度 = 0
+    while True:
+        顯示.fill(黑)
+        旋轉型式 = pygame.transform.rotate(字型, 角度)
+        旋轉 = 旋轉型式.get_rect()
+        旋轉.center = (螢幕寬/ 2, 螢幕高/ 2)
+        顯示.blit(旋轉型式, 旋轉)
+
+        另一旋轉型式 = pygame.transform.rotate(另一字型, 另一角度)
+        另一旋轉 = 另一旋轉型式.get_rect()
+        另一旋轉.center = (螢幕寬/ 2, 螢幕高/ 2)
+        顯示.blit(另一旋轉型式, 另一旋轉)
+
+        按鍵()
+
+        if 檢測按鍵():
+            pygame.event.get()
+            return
+        pygame.display.update()
+        時鐘.tick(點)
+        角度 += 3 
+        另一角度 += 7
+
+
+def 終止():
+    pygame.quit()
+    sys.exit()
+
+
+def 隨機產生位置():
+    return {'x': random.randint(0, 細胞寬 - 1), 'y': random.randint(0, 細胞高 - 1)}
+
+
+def 結束螢幕():
+    最後遊戲結束字體 = pygame.font.Font('freesansbold.ttf', 150)
+    遊戲字體 = 最後遊戲結束字體.render('Game', True, 白)
+    結束字體 = 最後遊戲結束字體.render('Over', True, 白)
+    遊戲字體移動 = 遊戲字體.get_rect()
+    結束字體移動 = 結束字體.get_rect()
+    遊戲字體移動.midtop = (螢幕寬 / 2, 10)
+    結束字體移動.midtop = (螢幕寬 / 2, 遊戲字體移動.height + 10 + 25)
+
+    顯示.blit(遊戲字體, 遊戲字體移動)
+    顯示.blit(結束字體, 結束字體移動)
+    按鍵()
+    pygame.display.update()
+    pygame.time.wait(500)
+    檢測按鍵() 
+
+    while True:
+        if 檢測按鍵():
+            pygame.event.get()
+            return
+
+def 顯示分數(score):
+    分數字體 = 基本點.render('Score: %s' % (score), True, 白)
+    分數字體移動 = 分數字體.get_rect()
+    分數字體移動.topleft = (螢幕寬 - 120, 10)
+    顯示.blit(分數字體, 分數字體移動)
+
+
+def 顯示蟲(蟲):
+    for 點 in 蟲:
+        x = 點['x'] * 細胞
+        y = 點['y'] * 細胞
+        蟲點 = pygame.Rect(x, y, 細胞, 細胞)
+        pygame.draw.rect(顯示, 深綠, 蟲點)
+        蟲蟲點 = pygame.Rect(x + 4, y + 4, 細胞 - 8, 細胞 - 8)
+        pygame.draw.rect(顯示, 綠, 蟲蟲點)
+
+
+def 顯示食物(食物):
+    x = 食物['x'] * 細胞
+    y = 食物['y'] * 細胞
+    位置 = pygame.Rect(x, y, 細胞, 細胞)
+    pygame.draw.rect(顯示, 紅, 位置)
+
+
+def 顯示方格():
+    for x in range(0, 螢幕寬, 細胞): 
+        pygame.draw.line(顯示, 綠, (x, 0), (x, 螢幕高))
+    for y in range(0, 螢幕高, 細胞): 
+        pygame.draw.line(顯示, 深灰, (0, y), (螢幕寬, y))
+
+
+if __name__ == '__main__':
+    主程式()
